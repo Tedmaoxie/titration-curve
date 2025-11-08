@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高精度滴定曲线模拟器</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background-color: #f4f7f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            width: 100%;
+            max-width: 1400px;
+        }
+
+        .panel {
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+            padding: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .panel:hover {
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        .controls-panel {
+            flex: 1;
+            min-width: 320px;
+        }
+
+        .visualization-panel {
+            flex: 2;
+            min-width: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .data-panel {
+            flex: 1;
+            min-width: 320px;
+        }
+
+        h2 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        .control-group input,
+        .control-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+
+        .control-group input:focus,
+        .control-group select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .button-group button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            background-color: #3498db;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+
+        .button-group button:hover {
+            background-color: #2980b9;
+        }
+
+        .button-group button:active {
+            transform: translateY(1px);
+        }
+
+        .button-group button:disabled {
+            background-color: #a9cce3;
+            cursor: not-allowed;
+        }
+
+        #resetBtn {
+            background-color: #e74c3c;
+        }
+
+        #resetBtn:hover {
+            background-color: #c0392b;
+        }
+
+        #pauseBtn {
+            background-color: #f39c12;
+        }
+
+        #pauseBtn:hover {
+            background-color: #e67e22;
+        }
+
+        #exportGroup {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        #exportGroup button {
+            flex: 1;
+            padding: 10px;
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #exportGroup button:hover {
+            background-color: #27ae60;
+        }
+
+        #titrationCanvas {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 1.5;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        .status-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .status-item {
+            background-color: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .status-item .label {
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .status-item .value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 6px;
+            overflow: hidden;
+            height: 12px;
+            margin-top: 10px;
+        }
+
+        #progressFill {
+            width: 0%;
+            height: 100%;
+            background-color: #3498db;
+            transition: width 0.1s linear;
+        }
+
+        .data-table-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            position: sticky;
+            top: 0;
+        }
+
+        .info-panel {
+            background-color: #eaf2f8;
+            border-left: 5px solid #3498db;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+
+        .info-panel h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+
+        .info-panel p {
+            margin-bottom: 0;
+            line-height: 1.6;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .loading-overlay.visible {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .loading-spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="controls-panel panel">
+            <h2>参数设置</h2>
+            <div class="control-group">
+                <label for="acidType">酸的类型</label>
+                <select id="acidType">
+                    <option value="HCl">盐酸 (强酸)</option>
+                    <option value="CH3COOH" selected>醋酸 (弱酸)</option>
+                    <option value="H2C2O4">草酸 (二元弱酸)</option>
+                    <option value="HCN">氢氰酸 (剧毒弱酸)</option>
+                    <option value="H3PO4">磷酸 (三元弱酸)</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="acidConcentration">酸的浓度 (mol/L)</label>
+                <input type="number" id="acidConcentration" value="0.1" step="0.01">
+            </div>
+            <div class="control-group">
+                <label for="acidVolume">酸的体积 (mL)</label>
+                <input type="number" id="acidVolume" value="20" step="1">
+            </div>
+            <div class="control-group">
+                <label for="naohConcentration">NaOH浓度 (mol/L)</label>
+                <input type="number" id="naohConcentration" value="0.1" step="0.01">
+            </div>
+            <div class="control-group">
+                <label for="titrationSpeed">滴定速度</label>
+                <select id="titrationSpeed">
+                    <option value="slow">慢速</option>
+                    <option value="medium" selected>中速</option>
+                    <option value="fast">快速</option>
+                </select>
+            </div>
+            <div class="button-group">
+                <button id="startBtn">开始滴定</button>
+                <button id="pauseBtn" disabled>暂停</button>
+                <button id="resetBtn">重置</button>
+            </div>
+            <div id="exportGroup">
+                <button id="exportDataBtn">导出数据 (CSV)</button>
+                <button id="exportChartBtn">导出图表 (PNG)</button>
+            </div>
+            <div class="info-panel" id="infoPanel">
+                <h3>模拟器说明</h3>
+                <p>本模拟器采用高精度pH计算模型，能够准确模拟强酸、弱酸及二元弱酸的滴定过程，并自动标记中和点。</p>
+            </div>
+        </div>
+
+        <div class="visualization-panel panel">
+            <h2>滴定过程监控</h2>
+            <div class="status-display">
+                <div class="status-item">
+                    <div class="label">已加NaOH体积</div>
+                    <div class="value" id="addedVolume">0.00 mL</div>
+                </div>
+                <div class="status-item">
+                    <div class="label">当前pH值</div>
+                    <div class="value" id="currentPH">--</div>
+                </div>
+                <div class="status-item">
+                    <div class="label">滴定进度</div>
+                    <div class="value" id="titrationProgress">0%</div>
+                </div>
+                <div class="status-item">
+                    <div class="label">中和点状态</div>
+                    <div class="value" id="equivalenceStatus">未检测</div>
+                </div>
+                <div class="status-item">
+                    <div class="label">酸解离常数</div>
+                    <div class="value" id="kaValue">--</div>
+                </div>
+            </div>
+            <div class="progress-bar">
+                <div id="progressFill"></div>
+            </div>
+            <canvas id="titrationCanvas"></canvas>
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+
+        <div class="data-panel panel">
+            <h2>实时数据</h2>
+            <div class="data-table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>NaOH体积(mL)</th>
+                            <th>pH值</th>
+                            <th>ΔpH/ΔV</th>
+                            <th>备注</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class TitrationSimulator {
+            constructor() {
+                this.canvas = document.getElementById('titrationCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.data = [];
+                this.isRunning = false;
+                this.isPaused = false;
+                this.animationId = null;
+                this.currentVolume = 0;
+                this.maxVolume = 50;
+                // 记录已标记的中和点标签，避免重复标记
+                this.detectedEquivalenceLabels = new Set();
+                // 中和点标注淡入动画状态
+                this.equivalenceAppearance = {};
+                // 中和点坐标校准（按标签存储体积偏移）
+                this.equivalenceCalibration = {};
+                this.loadCalibration();
+
+                this.chartPadding = { top: 40, right: 40, bottom: 50, left: 60 };
+
+                this.initCanvas();
+                this.bindEvents();
+                this.resetTitration();
+            }
+
+            initCanvas() {
+                const dpr = window.devicePixelRatio || 1;
+                const rect = this.canvas.getBoundingClientRect();
+                this.canvas.width = rect.width * dpr;
+                this.canvas.height = rect.height * dpr;
+                this.ctx.scale(dpr, dpr);
+                this.canvas.style.width = `${rect.width}px`;
+                this.canvas.style.height = `${rect.height}px`;
+            }
+
+            bindEvents() {
+                document.getElementById('startBtn').addEventListener('click', () => this.startTitration());
+                document.getElementById('pauseBtn').addEventListener('click', () => this.pauseTitration());
+                document.getElementById('resetBtn').addEventListener('click', () => this.resetTitration());
+                document.getElementById('exportDataBtn').addEventListener('click', () => this.exportData());
+                document.getElementById('exportChartBtn').addEventListener('click', () => this.exportChart());
+                document.getElementById('acidType').addEventListener('change', () => {
+                    this.updateAcidSettings();
+                    this.resetTitration();
+                });
+                window.addEventListener('resize', () => this.handleResize());
+            }
+
+            updateAcidSettings() {
+                const acidType = document.getElementById('acidType').value;
+                const acidConcInput = document.getElementById('acidConcentration');
+                const infoPanel = document.getElementById('infoPanel');
+
+                // Reset to default info
+                infoPanel.innerHTML = '<h3>模拟器说明</h3><p>本模拟器采用高精度pH计算模型，能够准确模拟强酸、弱酸及多元弱酸的滴定过程，并自动标记中和点。</p>';
+                infoPanel.style.borderColor = '#3498db';
+
+                switch (acidType) {
+                    case 'HCN':
+                        acidConcInput.min = 0.1;
+                        acidConcInput.max = 1.0;
+                        acidConcInput.value = Math.max(0.1, Math.min(1.0, parseFloat(acidConcInput.value)));
+                        infoPanel.innerHTML = '<h3>安全警告</h3><p><strong>氢氰酸(HCN)是剧毒物质！</strong> 在实际操作中，必须在通风橱内进行，并佩戴适当的个人防护装备。本模拟器仅供教学演示。 </p>';
+                        infoPanel.style.borderColor = '#e74c3c';
+                        break;
+                    case 'H3PO4':
+                        acidConcInput.min = 0.5;
+                        acidConcInput.max = 3.0;
+                        acidConcInput.value = Math.max(0.5, Math.min(3.0, parseFloat(acidConcInput.value)));
+                        break;
+                    default:
+                        acidConcInput.min = 0.01;
+                        acidConcInput.max = 1.0;
+                        acidConcInput.value = Math.max(0.01, Math.min(1.0, parseFloat(acidConcInput.value)));
+                        break;
+                }
+                this.updateKaDisplay();
+            }
+
+            handleResize() {
+                this.initCanvas();
+                this.drawAxes();
+                this.drawCurve();
+            }
+
+            drawAxes() {
+                const { ctx, canvas } = this;
+                const { top, right, bottom, left } = this.chartPadding;
+                const width = canvas.width / window.devicePixelRatio;
+                const height = canvas.height / window.devicePixelRatio;
+
+                // 基于等效体积 C(NaOH)*V(NaOH)/C(酸) 计算 X 轴比例
+                const naohConc = parseFloat(document.getElementById('naohConcentration').value);
+                const acidConc = parseFloat(document.getElementById('acidConcentration').value);
+                const scaledMaxVolume = (naohConc / acidConc) * this.maxVolume; // 轴域最大等效体积
+
+                this.xScale = (width - left - right) / scaledMaxVolume;
+                this.yScale = (height - top - bottom) / 14;
+
+                ctx.clearRect(0, 0, width, height);
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, width, height);
+
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 1.5;
+
+                // Y轴
+                ctx.beginPath();
+                ctx.moveTo(left, top);
+                ctx.lineTo(left, height - bottom);
+                ctx.stroke();
+
+                // X轴
+                ctx.beginPath();
+                ctx.moveTo(left, height - bottom);
+                ctx.lineTo(width - right, height - bottom);
+                ctx.stroke();
+
+                // 轴标签和刻度
+                ctx.fillStyle = '#333';
+                ctx.font = '12px Segoe UI, sans-serif';
+                ctx.textAlign = 'center';
+
+                // X轴刻度（等效体积域）
+                for (let i = 0; i <= scaledMaxVolume; i += 5) {
+                    const x = left + i * this.xScale;
+                    ctx.fillText(i.toFixed(0), x, height - bottom + 20);
+                    ctx.beginPath();
+                    ctx.moveTo(x, height - bottom);
+                    ctx.lineTo(x, height - bottom + 5);
+                    ctx.stroke();
+                }
+                ctx.fillText('等效体积 (mL)', left + (width - left - right) / 2, height - bottom + 40);
+
+                // Y轴刻度
+                ctx.textAlign = 'right';
+                for (let i = 0; i <= 14; i += 2) {
+                    const y = height - bottom - i * this.yScale;
+                    ctx.fillText(i, left - 10, y + 4);
+                    ctx.beginPath();
+                    ctx.moveTo(left, y);
+                    ctx.lineTo(left - 5, y);
+                    ctx.stroke();
+                }
+                ctx.save();
+                ctx.translate(left - 40, top + (height - top - bottom) / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.textAlign = 'center';
+                ctx.fillText('pH 值', 0, 0);
+                ctx.restore();
+
+                // 网格线
+                ctx.strokeStyle = '#e9ecef';
+                ctx.lineWidth = 1;
+                
+                // 垂直网格线（等效体积域）
+                for (let i = 0; i <= scaledMaxVolume; i += 5) {
+                    const x = left + i * this.xScale;
+                    ctx.beginPath();
+                    ctx.moveTo(x, top);
+                    ctx.lineTo(x, height - bottom);
+                    ctx.stroke();
+                }
+
+                // 水平网格线
+                for (let i = 0; i <= 14; i += 2) {
+                    const y = height - bottom - i * this.yScale;
+                    ctx.beginPath();
+                    ctx.moveTo(left, y);
+                    ctx.lineTo(width - right, y);
+                    ctx.stroke();
+                }
+            }
+
+            calculatePH(naohVolume, naohConc, acidVolume, acidConc, acidType) {
+                const totalVolume = naohVolume + acidVolume;
+                const naohMoles = naohVolume * naohConc / 1000;
+                const acidMoles = acidVolume * acidConc / 1000;
+
+                switch (acidType) {
+                    case 'HCl':
+                        return this.calculateStrongAcidPH(naohMoles, acidMoles, totalVolume);
+                    case 'CH3COOH':
+                        return this.calculateWeakAcidPH(naohMoles, acidMoles, totalVolume, 1.8e-5);
+                    case 'HCN':
+                        return this.calculateWeakAcidPH(naohMoles, acidMoles, totalVolume, 6.2e-10); // pKa 9.2
+                    case 'H2C2O4':
+                        return this.calculateOxalicAcidPH(naohMoles, acidMoles, totalVolume);
+                    case 'H3PO4':
+                        return this.calculatePhosphoricAcidPH(naohMoles, acidMoles, totalVolume);
+                    default:
+                        return 7;
+                }
+            }
+
+            calculateStrongAcidPH(naohMoles, acidMoles, totalVolume) {
+                const kw = 1.0e-14; // Water ion product
+                const volumeInLiters = totalVolume / 1000;
+
+                // Delta = [Na+] - [Cl-]
+                const delta = (naohMoles - acidMoles) / volumeInLiters;
+
+                // Solve the quadratic equation for H+ concentration: H^2 + delta*H - Kw = 0
+                const hConcentration = (-delta + Math.sqrt(delta * delta + 4 * kw)) / 2;
+
+                return -Math.log10(hConcentration);
+            }
+
+            calculateWeakAcidPH(naohMoles, acidMoles, totalVolume, ka) {
+                const kw = 1.0e-14; // Water ion product
+
+                const V_t = totalVolume / 1000; // Total volume in Liters
+
+                // [Na+] = n_OH / V_t
+                const naPlus = naohMoles / V_t;
+
+                // T = n_HA^0 / V_t
+                const totalAcid = acidMoles / V_t;
+
+                // The exact charge balance equation is:
+                // f(H) = [Na+] + [H+] - [A-] - [OH-] = 0
+                // where [A-] = T * Ka / (Ka + [H+]) and [OH-] = Kw / [H+]
+                // So, f(H) = [Na+] + H - T * Ka / (Ka + H) - Kw / H = 0
+                const f = (h) => naPlus + h - totalAcid * ka / (ka + h) - kw / h;
+
+                // Solve for H = [H+] using a numerical solver (bisection method)
+                const hConcentration = this.solveEquation(f);
+                
+                // pH = -log10([H+])
+                return -Math.log10(hConcentration);
+            }
+
+            // Renamed from solveCubic for clarity, as it's a general bisection solver.
+            solveEquation(f) {
+                let h_min = 1e-14; // Minimum possible [H+]
+                let h_max = 1.0;   // Maximum possible [H+]
+                let h_mid;
+
+                // Bisection method for 100 iterations for high precision
+                for (let i = 0; i < 100; i++) {
+                    h_mid = (h_min + h_max) / 2;
+                    if (f(h_mid) > 0) {
+                        h_max = h_mid;
+                    } else {
+                        h_min = h_mid;
+                    }
+                }
+                return h_mid;
+            }
+
+            calculateOxalicAcidPH(naohMoles, acidMoles, totalVolume) {
+                const ka1 = 5.9e-2; // Oxalic acid first dissociation constant
+                const ka2 = 6.4e-5; // Oxalic acid second dissociation constant
+                const kw = 1.0e-14;  // Water ion product
+
+                const V_t = totalVolume / 1000; // Total volume in Liters
+
+                // Total acid species concentration (T)
+                const totalAcid = acidMoles / V_t;
+
+                // Sodium ion concentration from NaOH
+                const naPlus = naohMoles / V_t;
+
+                // Charge balance equation f(H) = [Na+] + [H+] - [HA-] - 2[A^2-] - [OH-]
+                // where species concentrations are expressed as fractions of T.
+                const f = (h) => {
+                    const delta = h * h + h * ka1 + ka1 * ka2;
+                    const haMinus = totalAcid * (h * ka1) / delta;
+                    const a2Minus = totalAcid * (ka1 * ka2) / delta;
+                    return naPlus + h - haMinus - 2 * a2Minus - kw / h;
+                };
+
+                // Solve for H = [H+] using the numerical solver
+                const hConcentration = this.solveEquation(f);
+
+                // pH = -log10([H+])
+                return -Math.log10(hConcentration);
+            }
+
+            calculatePhosphoricAcidPH(naohMoles, acidMoles, totalVolume) {
+                const ka1 = 7.5e-3;  // pKa1 ~ 2.12
+                const ka2 = 6.2e-8;  // pKa2 ~ 7.21
+                const ka3 = 4.4e-13; // pKa3 ~ 12.35
+                const kw = 1.0e-14;
+
+                const V_t = totalVolume / 1000;
+                const totalAcid = acidMoles / V_t;
+                const naPlus = naohMoles / V_t;
+
+                // f(H) = [Na+] + H - [H2PO4-] - 2[HPO4^2-] - 3[PO4^3-] - [OH-]
+                const f = (h) => {
+                    const h2 = h * h;
+                    const h3 = h2 * h;
+                    const delta = h3 + h2 * ka1 + h * ka1 * ka2 + ka1 * ka2 * ka3;
+                    const h2po4 = totalAcid * (h2 * ka1) / delta;
+                    const hpo4 = totalAcid * (h * ka1 * ka2) / delta;
+                    const po4 = totalAcid * (ka1 * ka2 * ka3) / delta;
+                    return naPlus + h - h2po4 - 2 * hpo4 - 3 * po4 - kw / h;
+                };
+
+                const hConcentration = this.solveEquation(f);
+                return -Math.log10(hConcentration);
+            }
+            
+            calculatePrecisePH(naohMoles, acidMoles, totalVolume, acidType, isNearNeutralization = false) {
+                const Kw = 1.0e-14;
+                const T = 298.15;
+                const R = 8.314;
+                const F = 96485;
+                
+                const ionicStrength = this.calculateIonicStrength(naohMoles, acidMoles, totalVolume, acidType);
+                const activityCoefficients = this.calculateActivityCoefficients(ionicStrength);
+                
+                return this.solvePrecisePH(naohMoles, acidMoles, totalVolume, acidType, Kw, activityCoefficients, isNearNeutralization);
+            }
+
+            calculateIonicStrength(naohMoles, acidMoles, totalVolume, acidType) {
+                const volumeInLiters = totalVolume / 1000;
+                let ionicStrength = 0;
+                
+                if (naohMoles > acidMoles) {
+                    const excessOH = naohMoles - acidMoles;
+                    ionicStrength += 0.5 * (excessOH/volumeInLiters * 1 + excessOH/volumeInLiters * 1);
+                }
+                
+                switch (acidType) {
+                    case 'HCl':
+                        if (acidMoles > naohMoles) {
+                            const excessHCl = acidMoles - naohMoles;
+                            ionicStrength += 0.5 * (excessHCl/volumeInLiters * 1 + excessHCl/volumeInLiters * 1);
+                        }
+                        break;
+                    case 'CH3COOH':
+                    case 'HCN':
+                        break;
+                    case 'H2C2O4':
+                    case 'H3PO4':
+                        break;
+                }
+                return ionicStrength;
+            }
+
+            calculateActivityCoefficients(ionicStrength) {
+                const A = 0.509;
+                const B = 1.5;
+                
+                const gammaH = Math.pow(10, -A * Math.sqrt(ionicStrength) / (1 + Math.sqrt(ionicStrength)) - B * ionicStrength);
+                const gammaOH = Math.pow(10, -A * Math.sqrt(ionicStrength) / (1 + Math.sqrt(ionicStrength)) - B * ionicStrength);
+                const gammaIon = Math.pow(10, -A * Math.sqrt(ionicStrength) / (1 + Math.sqrt(ionicStrength)) - B * ionicStrength);
+                
+                return {
+                    H: Math.max(gammaH, 0.1),
+                    OH: Math.max(gammaOH, 0.1),
+                    ion: Math.max(gammaIon, 0.1)
+                };
+            }
+
+            solvePrecisePH(naohMoles, acidMoles, totalVolume, acidType, Kw, activityCoefficients, isNearNeutralization) {
+                const volumeInLiters = totalVolume / 1000;
+                
+                if (isNearNeutralization && Math.abs(naohMoles - acidMoles) < 0.01 * acidMoles) {
+                    return this.solveWaterIonizationBalance(naohMoles, acidMoles, volumeInLiters, acidType, Kw, activityCoefficients);
+                }
+                
+                return this.calculateStandardPH(naohMoles, acidMoles, totalVolume, acidType, activityCoefficients);
+            }
+
+            solveWaterIonizationBalance(naohMoles, acidMoles, volumeInLiters, acidType, Kw, activityCoefficients) {
+                const delta = naohMoles - acidMoles;
+                const gammaH = activityCoefficients.H;
+                const gammaOH = activityCoefficients.OH;
+                const effectiveKw = Kw / (gammaH * gammaOH);
+                
+                let ph;
+                if (Math.abs(delta) < 1e-10) {
+                    const hConcentration = Math.sqrt(effectiveKw);
+                    ph = -Math.log10(hConcentration * gammaH);
+                } else if (delta > 0) {
+                    const ohExcess = delta / volumeInLiters;
+                    const ohActivity = ohExcess * gammaOH;
+                    const hActivity = effectiveKw / ohActivity;
+                    ph = -Math.log10(hActivity);
+                } else {
+                    const hExcess = -delta / volumeInLiters;
+                    const hActivity = hExcess * gammaH;
+                    ph = -Math.log10(hActivity);
+                }
+                
+                return Math.max(0, Math.min(14, ph));
+            }
+
+            calculateStandardPH(naohMoles, acidMoles, totalVolume, acidType, activityCoefficients) {
+                const volumeInLiters = totalVolume / 1000;
+                const naohExcess = naohMoles - acidMoles;
+                
+                if (Math.abs(naohExcess) < 1e-10) {
+                    return this.calculateTheoreticalNeutralizationPH(acidType, activityCoefficients);
+                } else if (naohExcess > 0) {
+                    const ohConcentration = naohExcess / volumeInLiters;
+                    const ohActivity = ohConcentration * activityCoefficients.OH;
+                    const hActivity = 1e-14 / ohActivity;
+                    return Math.max(0, Math.min(14, -Math.log10(hActivity)));
+                } else {
+                    const hConcentration = -naohExcess / volumeInLiters;
+                    const hActivity = hConcentration * activityCoefficients.H;
+                    return Math.max(0, Math.min(14, -Math.log10(hActivity)));
+                }
+            }
+
+            calculateTheoreticalNeutralizationPH(acidType, activityCoefficients) {
+                switch (acidType) {
+                    case 'HCl':
+                        return 7.0;
+                    case 'CH3COOH':
+                    case 'HCN':
+                        const ka = acidType === 'CH3COOH' ? 1.8e-5 : 6.2e-10;
+                        const kb = 1e-14 / ka;
+                        const gammaRatio = activityCoefficients.OH / activityCoefficients.H;
+                        return 7.0 + 0.5 * Math.log10(kb * gammaRatio);
+                    case 'H2C2O4':
+                        const ka2 = 6.4e-5;
+                        const kb1 = 1e-14 / ka2;
+                        const gammaRatio2 = activityCoefficients.OH / activityCoefficients.H;
+                        return 7.0 + 0.5 * Math.log10(kb1 * gammaRatio2);
+                    case 'H3PO4': // Simplified for now
+                        const pka2 = 7.21;
+                        const pkb1 = 14 - pka2;
+                        return 7.0 + 0.5 * (pkb1 - 7);
+                    default:
+                        return 7.0;
+                }
+            }
+
+            drawCurve() {
+                this.drawAxes();
+                
+                if (this.data.length === 0) return;
+
+                const ctx = this.ctx;
+                const { top, left } = this.chartPadding;
+
+                ctx.strokeStyle = '#3498db';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+
+                this.data.forEach((point, index) => {
+                    const x = left + this.getAxisVolume(point.volume) * this.xScale;
+                    const y = this.canvas.height / window.devicePixelRatio - top - point.ph * this.yScale;
+                    
+                    if (index === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                });
+
+                ctx.stroke();
+                this.markKeyPoints();
+            }
+
+            markKeyPoints() {
+                const ctx = this.ctx;
+                const { top, left } = this.chartPadding;
+                const acidType = document.getElementById('acidType').value;
+                // 仅在动画达到中和点后绘制标注（延迟显示）
+                const theoreticalPoints = this.getTheoreticalEquivalencePoints();
+                ctx.save();
+                
+                const height = this.canvas.height / window.devicePixelRatio;
+
+                this.data.forEach(point => {
+                    if (point.isKeyPoint && point.pointType === 'equivalence') {
+                        // Only mark points that match theoretical calculations
+                        const isValidPoint = this.isValidEquivalencePoint(point, theoreticalPoints, acidType);
+                        
+                        if (isValidPoint) {
+                            const label = point.label || '中和点';
+                            const theoretical = theoreticalPoints.find(p => p.label === label);
+                            // 锁定到理论等效体积与对应 pH
+                            const axisVolume = theoretical ? theoretical.volume : this.getAxisVolume(point.volume);
+                            const naohVolumeAtAxis = this.getNaohVolumeFromAxis(axisVolume);
+                            const naohConc = parseFloat(document.getElementById('naohConcentration').value);
+                            const acidVolume = parseFloat(document.getElementById('acidVolume').value);
+                            const acidConc = parseFloat(document.getElementById('acidConcentration').value);
+                            const phAtAxis = this.calculatePH(naohVolumeAtAxis, naohConc, acidVolume, acidConc, acidType);
+                            const x = left + axisVolume * this.xScale;
+                            const y = height - top - phAtAxis * this.yScale;
+                            const displayedLabel = '中和点';
+                            // 动画淡入：首次出现从0到1逐渐增加透明度
+                            const currentAlpha = (this.equivalenceAppearance && this.equivalenceAppearance[label] != null)
+                                ? this.equivalenceAppearance[label]
+                                : 1; // 没有动画状态时直接显示
+                            const nextAlpha = Math.min(1, (currentAlpha === 1 ? 1 : currentAlpha + 0.1));
+                            if (!this.equivalenceAppearance) this.equivalenceAppearance = {};
+                            // 记录最新透明度用于下一帧
+                            this.equivalenceAppearance[label] = nextAlpha;
+                            ctx.globalAlpha = nextAlpha;
+                            
+                            // Use different colors for monoprotic vs diprotic acids
+                            if (acidType === 'HCl' || acidType === 'CH3COOH' || acidType === 'HCN') {
+                                ctx.fillStyle = '#e74c3c'; // Red for monoprotic
+                            } else if (acidType === 'H2C2O4') {
+                                if (label === '第一中和点') {
+                                    ctx.fillStyle = '#f39c12'; // Orange for first point
+                                } else {
+                                    ctx.fillStyle = '#9b59b6'; // Purple for second point
+                                }
+                            } else if (acidType === 'H3PO4') {
+                                if (label === '第一中和点') {
+                                    ctx.fillStyle = '#f39c12';
+                                } else if (label === '第二中和点') {
+                                    ctx.fillStyle = '#9b59b6';
+                                } else {
+                                    ctx.fillStyle = '#1abc9c'; // Teal for third point
+                                }
+                            }
+                            
+                            ctx.beginPath();
+                            ctx.arc(x, y, 8, 0, 2 * Math.PI); // Larger marker
+                            ctx.fill();
+                            
+                            ctx.fillStyle = 'white';
+                            ctx.beginPath();
+                            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                            ctx.fill();
+
+                            // Draw label: 仅显示“中和点”，无公式
+                            ctx.fillStyle = '#2c3e50';
+                            const labelFontSize = Math.max(11, Math.round(8 * 1.5));
+                            ctx.font = `bold ${labelFontSize}px Segoe UI, sans-serif`;
+                            ctx.textAlign = 'center';
+                            ctx.fillText(displayedLabel, x, y - 18);
+
+                            // 不显示任何公式或数学表达式
+                            // 重置透明度，避免影响其他元素
+                            ctx.globalAlpha = 1;
+                        }
+                    }
+                });
+                ctx.restore();
+            }
+
+            getBaseEquivalencePoints() {
+                const acidType = document.getElementById('acidType').value;
+                const acidVolume = parseFloat(document.getElementById('acidVolume').value);
+
+                const points = [];
+
+                if (acidType === 'HCl' || acidType === 'CH3COOH' || acidType === 'HCN') {
+                    // 一元酸：等效体积域中中和点位于酸的体积
+                    const axisEq = acidVolume;
+                    if (axisEq > 0) {
+                        points.push({ volume: axisEq, label: '中和点', type: 'monoprotic' });
+                    }
+                } else if (acidType === 'H2C2O4') {
+                    // 二元酸：第一中和点为酸体积，第二为第一的两倍（等效体积域）
+                    const firstAxisEq = acidVolume;
+                    const secondAxisEq = 2 * firstAxisEq;
+                    if (firstAxisEq > 0) {
+                        points.push({ volume: firstAxisEq, label: '第一中和点', type: 'first' });
+                    }
+                    if (secondAxisEq > 0) {
+                        points.push({ volume: secondAxisEq, label: '第二中和点', type: 'second' });
+                    }
+                } else if (acidType === 'H3PO4') {
+                    const firstEq = acidVolume;
+                    const secondEq = 2 * acidVolume;
+                    const thirdEq = 3 * acidVolume;
+                    points.push({ volume: firstEq, label: '第一中和点', type: 'first' });
+                    points.push({ volume: secondEq, label: '第二中和点', type: 'second' });
+                    points.push({ volume: thirdEq, label: '第三中和点', type: 'third' });
+                }
+                
+                return points;
+            }
+
+            getTheoreticalEquivalencePoints() {
+                const base = this.getBaseEquivalencePoints();
+                return base.map(p => {
+                    const offset = (this.equivalenceCalibration && this.equivalenceCalibration[p.label] && this.equivalenceCalibration[p.label].volumeOffset) || 0;
+                    return { ...p, volume: p.volume + offset };
+                });
+            }
+
+            isValidEquivalencePoint(detectedPoint, theoreticalPoints, acidType) {
+                // 在等效体积域比较：C(NaOH)*V(NaOH)/C(酸)
+                const tolerance = 2.0; // 等效体积容差（mL 等效）
+                const detectedAxis = this.getAxisVolume(detectedPoint.volume);
+                return theoreticalPoints.some(theoreticalPoint => 
+                    Math.abs(detectedAxis - theoreticalPoint.volume) <= tolerance &&
+                    detectedPoint.label === theoreticalPoint.label
+                );
+            }
+
+            updateDataTable() {
+                const tbody = document.getElementById('dataTableBody');
+                tbody.innerHTML = '';
+
+                this.data.slice(-20).reverse().forEach(point => {
+                    const row = tbody.insertRow();
+                    row.insertCell(0).textContent = point.volume.toFixed(2);
+                    row.insertCell(1).textContent = point.ph.toFixed(2);
+                    row.insertCell(2).textContent = point.derivative ? point.derivative.toFixed(3) : '--';
+                    row.insertCell(3).textContent = point.note || '';
+                });
+            }
+
+            updateKaDisplay() {
+                const acidType = document.getElementById('acidType').value;
+                const kaElement = document.getElementById('kaValue');
+                
+                switch (acidType) {
+                    case 'HCl':
+                        kaElement.textContent = '强酸 (无Ka)';
+                        break;
+                    case 'CH3COOH':
+                        kaElement.textContent = 'Ka = 1.8×10⁻⁵';
+                        break;
+                    case 'HCN':
+                        kaElement.textContent = 'Ka = 6.2×10⁻¹⁰';
+                        break;
+                    case 'H2C2O4':
+                        kaElement.textContent = 'Ka₁ = 5.9×10⁻², Ka₂ = 6.4×10⁻⁵';
+                        break;
+                    case 'H3PO4':
+                        kaElement.textContent = 'Ka₁=7.5e-3, Ka₂=6.2e-8, Ka₃=4.4e-13';
+                        break;
+                    default:
+                        kaElement.textContent = '--';
+                }
+            }
+
+            updateStatus() {
+                const naohConc = parseFloat(document.getElementById('naohConcentration').value);
+                const acidVolume = parseFloat(document.getElementById('acidVolume').value);
+                const acidConc = parseFloat(document.getElementById('acidConcentration').value);
+                const acidType = document.getElementById('acidType').value;
+
+                const currentPH = this.data.length > 0 ? this.data[this.data.length - 1].ph : this.calculatePH(0, naohConc, acidVolume, acidConc, acidType);
+                const progress = (this.currentVolume / this.maxVolume) * 100;
+
+                document.getElementById('addedVolume').textContent = this.currentVolume.toFixed(2) + ' mL';
+                document.getElementById('currentPH').textContent = currentPH.toFixed(2);
+                document.getElementById('titrationProgress').textContent = progress.toFixed(1) + '%';
+                document.getElementById('progressFill').style.width = progress + '%';
+
+                const equivalenceDetected = this.detectEquivalencePoint();
+                document.getElementById('equivalenceStatus').textContent = equivalenceDetected ? '已检测' : '未检测';
+            }
+
+            detectEquivalencePoint() {
+                const acidType = document.getElementById('acidType').value;
+                const naohConcentration = parseFloat(document.getElementById('naohConcentration').value);
+                const acidConcentration = parseFloat(document.getElementById('acidConcentration').value);
+                const acidVolume = parseFloat(document.getElementById('acidVolume').value);
+
+                this.equivalencePoints = [];
+
+                if (acidType === 'HCl' || acidType === 'CH3COOH') {
+                    // Monoprotic acid: C1V1 = C2V2
+                    const naohVolume = (acidConcentration * acidVolume) / naohConcentration;
+                    if (naohVolume > 0) {
+                        this.equivalencePoints.push({ volume: naohVolume, label: '中和点' });
+                    }
+                } else if (acidType === 'H2C2O4') {
+                    // Diprotic acid: First and second equivalence points
+                    const firstEquivalenceVolume = (acidConcentration * acidVolume) / naohConcentration;
+                    const secondEquivalenceVolume = 2 * firstEquivalenceVolume;
+                    if (firstEquivalenceVolume > 0) {
+                        this.equivalencePoints.push({ volume: firstEquivalenceVolume, label: '第一中和点' });
+                    }
+                    if (secondEquivalenceVolume > 0) {
+                        this.equivalencePoints.push({ volume: secondEquivalenceVolume, label: '第二中和点' });
+                    }
+                }
+                // 不在初始阶段绘制中和点标注，保持延迟显示，仅返回状态
+            }
+
+            startTitration() {
+                if (this.isRunning && !this.isPaused) return;
+                
+                if (!this.isPaused) {
+                    this.resetTitration();
+                }
+
+                this.isRunning = true;
+                this.isPaused = false;
+                
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('pauseBtn').disabled = false;
+                
+                this.animateTitration();
+            }
+
+            pauseTitration() {
+                this.isPaused = !this.isPaused;
+                
+                if (this.isPaused) {
+                    document.getElementById('pauseBtn').textContent = '继续';
+                    if (this.animationId) {
+                        cancelAnimationFrame(this.animationId);
+                    }
+                } else {
+                    document.getElementById('pauseBtn').textContent = '暂停';
+                    this.animateTitration();
+                }
+            }
+
+            resetTitration() {
+                this.isRunning = false;
+                this.isPaused = false;
+                this.currentVolume = 0;
+                this.data = [];
+                // 清空已标记的中和点集合，保证酸类型切换后不会残留
+                if (this.detectedEquivalenceLabels) {
+                    this.detectedEquivalenceLabels.clear();
+                }
+                // 重置标注淡入动画状态
+                this.equivalenceAppearance = {};
+                
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                }
+                
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('pauseBtn').disabled = true;
+                document.getElementById('pauseBtn').textContent = '暂停';
+                
+                this.updateStatus();
+                this.updateDataTable();
+                this.drawAxes();
+            }
+
+            loadCalibration() {
+                try {
+                    const raw = localStorage.getItem('titration_equivalence_calibration');
+                    if (raw) this.equivalenceCalibration = JSON.parse(raw) || {};
+                } catch (_) {
+                    this.equivalenceCalibration = {};
+                }
+            }
+
+            saveCalibration() {
+                try {
+                    localStorage.setItem('titration_equivalence_calibration', JSON.stringify(this.equivalenceCalibration || {}));
+                } catch (_) {}
+            }
+
+            // 将 NaOH 加入体积映射到等效体积：C(NaOH)*V(NaOH)/C(酸)
+            getAxisVolume(volumeNaoh) {
+                const naohConc = parseFloat(document.getElementById('naohConcentration').value);
+                const acidConc = parseFloat(document.getElementById('acidConcentration').value);
+                return (naohConc / acidConc) * volumeNaoh;
+            }
+
+            // 从等效体积反推 NaOH 实际体积：V(NaOH) = 轴体积 * C(酸) / C(NaOH)
+            getNaohVolumeFromAxis(axisVolume) {
+                const naohConc = parseFloat(document.getElementById('naohConcentration').value);
+                const acidConc = parseFloat(document.getElementById('acidConcentration').value);
+                return axisVolume * acidConc / naohConc;
+            }
+
+            mmToPx(mm) {
+                const pxPerMM = 96 / 25.4; // 约等于 3.78 px/mm（CSS像素）
+                return mm * pxPerMM;
+            }
+
+            calibrateEquivalence(label, measuredVolume) {
+                const basePoints = this.getBaseEquivalencePoints();
+                const base = basePoints.find(p => p.label === label);
+                if (!base) return false;
+                // 将测量的 NaOH 体积转换到等效体积域
+                const measuredAxis = this.getAxisVolume(measuredVolume);
+                const offset = measuredAxis - base.volume;
+                this.equivalenceCalibration[label] = { volumeOffset: offset };
+                this.saveCalibration();
+                return true;
+            }
+
+            getLatestMeasuredEquivalenceVolume(label) {
+                for (let i = this.data.length - 1; i >= 0; i--) {
+                    const p = this.data[i];
+                    if (p.isKeyPoint && p.pointType === 'equivalence' && (p.label || '') === label) {
+                        // 返回等效体积域的值
+                        return this.getAxisVolume(p.volume);
+                    }
+                }
+                return null;
+            }
+
+            verifyCalibration(label, toleranceMm = 0.1) {
+                const measured = this.getLatestMeasuredEquivalenceVolume(label);
+                if (measured == null) return { ok: false, message: '无测量数据' };
+                const theoretical = this.getTheoreticalEquivalencePoints().find(p => p.label === label);
+                if (!theoretical) return { ok: false, message: '无理论数据' };
+                const { left } = this.chartPadding;
+                const xMeasured = left + measured * this.xScale;
+                const xTheoretical = left + theoretical.volume * this.xScale;
+                const dxPx = Math.abs(xMeasured - xTheoretical);
+                const tolPx = this.mmToPx(toleranceMm);
+                return { ok: dxPx <= tolPx, dxPx, tolPx };
+            }
+
+            animateTitration() {
+                if (!this.isRunning || this.isPaused) return;
+
+                const naohConc = parseFloat(document.getElementById('naohConcentration').value);
+                const acidVolume = parseFloat(document.getElementById('acidVolume').value);
+                const acidConc = parseFloat(document.getElementById('acidConcentration').value);
+                const acidType = document.getElementById('acidType').value;
+                const speed = document.getElementById('titrationSpeed').value;
+
+                const speedMap = { slow: 0.05, medium: 0.1, fast: 0.2 };
+                const increment = speedMap[speed] || 0.1;
+
+                if (this.currentVolume < this.maxVolume) {
+                    this.currentVolume += increment;
+                    
+                    const ph = this.calculatePH(this.currentVolume, naohConc, acidVolume, acidConc, acidType);
+                    
+                    let note = '';
+                    let isKeyPoint = false;
+                    let pointType = '';
+                    let derivative = null;
+                    
+                    if (this.data.length > 0) {
+                        const lastPoint = this.data[this.data.length - 1];
+                        derivative = (ph - lastPoint.ph) / increment;
+                        
+                        const acidType = document.getElementById('acidType').value;
+                        const theoreticalPoints = this.getTheoreticalEquivalencePoints();
+                        
+                        // 改为跨越等效体积目标值后标记，避免提前触发
+                        const currentAxis = this.getAxisVolume(this.currentVolume);
+                        const crossingPoint = theoreticalPoints
+                            .filter(p => !this.detectedEquivalenceLabels.has(p.label))
+                            .sort((a, b) => a.volume - b.volume)
+                            .find(p => currentAxis >= p.volume);
+
+                        if (crossingPoint) {
+                            isKeyPoint = true;
+                            pointType = 'equivalence';
+                            note = crossingPoint.label;
+                            this.detectedEquivalenceLabels.add(crossingPoint.label);
+                            // 初始化淡入动画透明度
+                            if (!this.equivalenceAppearance) this.equivalenceAppearance = {};
+                            this.equivalenceAppearance[crossingPoint.label] = 0;
+                        }
+                    }
+                    
+                    this.data.push({
+                        volume: this.currentVolume,
+                        ph: ph,
+                        derivative: derivative,
+                        isKeyPoint: isKeyPoint,
+                        pointType: pointType,
+                        label: note
+                    });
+                    
+                    this.drawCurve();
+                    this.updateDataTable();
+                    this.updateStatus();
+                    
+                    this.animationId = requestAnimationFrame(() => this.animateTitration());
+                } else {
+                    this.isRunning = false;
+                    document.getElementById('startBtn').disabled = false;
+                    document.getElementById('pauseBtn').disabled = true;
+                }
+            }
+
+            exportData() {
+                if (this.data.length === 0) {
+                    alert('没有数据可以导出');
+                    return;
+                }
+
+                let csv = 'NaOH体积(mL),pH值,ΔpH/ΔV,备注\n';
+                this.data.forEach(point => {
+                    csv += `${point.volume.toFixed(3)},${point.ph.toFixed(3)},${point.derivative ? point.derivative.toFixed(4) : ''},${point.note}\n`;
+                });
+
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', '滴定数据.csv');
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            exportChart() {
+                const link = document.createElement('a');
+                link.download = '滴定曲线.png';
+                link.href = this.canvas.toDataURL();
+                link.click();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new TitrationSimulator();
+        });
+    </script>
+</body>
+</html>
